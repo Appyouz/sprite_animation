@@ -33,7 +33,7 @@ int main() {
   }
 
   SDL_Renderer *renderer{nullptr};
-  renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED);
+  renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED | SDL_RENDERER_PRESENTVSYNC);
 
   if (renderer == nullptr) {
     std::cerr << "Failed to create renderer: " << SDL_GetError() << '\n';
@@ -50,8 +50,15 @@ int main() {
 
   SDL_FreeSurface(playerSurface);
 
+  // Define the number of frames in the run animation and the time per frame
+  int numFrames = 4;
+  int frameTime = 100; // in milliseconds
+  int currentFrame {0};
+  Uint32 lastFrameTime{0};
+
   SDL_Rect playerSourceRect{0, 0, 32, 32};
-  SDL_Rect playerDestRect{100, 100, 32, 32};
+  SDL_Rect playerDestRect{100, 100, 100, 100};
+
   int playerVelocityX{0};
   int playerVelocityY{0};
   bool isJumping{false};
@@ -139,18 +146,41 @@ int main() {
         }
       }
       playerDestRect.x += playerVelocityX;
-      if(playerDestRect.x < 0){
+      if (playerDestRect.x < 0) {
         playerDestRect.x = 0;
-      }else if(playerDestRect.x + playerDestRect.w > SCREEN_WIDTH){
+      } else if (playerDestRect.x + playerDestRect.w > SCREEN_WIDTH) {
         playerDestRect.x = SCREEN_WIDTH - playerDestRect.w;
       }
       lag -= maxFrameTime;
     }
 
+    // Update animation frame
+    if (currentTime - lastFrameTime > frameTime) {
+      currentFrame = (currentFrame + 1) % numFrames;
+      lastFrameTime = currentTime;
+      playerSourceRect.x = currentFrame * playerSourceRect.w;
+    }
+  // Update player position
+    playerVelocityY += gravity;
+    playerDestRect.y += playerVelocityY;
+    for (const auto &tile : tileMap) {
+        if (SDL_HasIntersection(&playerDestRect, &tile.rect)) {
+            if (playerVelocityY > 0) {
+                playerDestRect.y = tile.rect.y - playerDestRect.h;
+                playerVelocityY = 0;
+                isJumping = false;
+            } else if (playerVelocityY < 0) {
+                playerDestRect.y = tile.rect.y + tile.rect.h;
+                playerVelocityY = 0;
+            }
+        }
+    }
+
+
     // Update and render idle animation
     SDL_SetRenderDrawColor(renderer, 0, 0, 0, SDL_ALPHA_OPAQUE);
-    SDL_RenderClear(renderer);
 
+    SDL_RenderClear(renderer);
     SDL_RenderCopy(renderer, playerTexture, &playerSourceRect, &playerDestRect);
 
     // Draw the tile map
