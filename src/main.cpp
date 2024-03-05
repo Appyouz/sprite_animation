@@ -87,6 +87,7 @@ int main() {
   
 
 
+SDL_RendererFlip flipType = SDL_FLIP_NONE;
   std::vector<Tile> tileMap;
 
   // Define ground platform
@@ -127,10 +128,14 @@ int main() {
         case SDLK_a:
           playerVelocityX = -5;
             isMoving = true;
+
+        flipType = SDL_FLIP_HORIZONTAL; // Set to flip horizontally when moving left
           break;
         case SDLK_d:
           playerVelocityX = 5;
             isMoving = true;
+
+        flipType = SDL_FLIP_NONE; // Set to flip horizontally when moving left
           break;
         default:
           break;
@@ -214,19 +219,31 @@ playerDestRect.h = isMoving ? RUN_PLAYER_HEIGHT : IDLE_PLAYER_HEIGHT;
       }
       lastFrameTime = currentTime;
     }
+float scaleFactor = 2.0f; // Example: double the size
+playerDestRect.w *= scaleFactor;
+playerDestRect.h *= scaleFactor;
+
+
     // Update and render idle animation
     SDL_SetRenderDrawColor(renderer, 0, 0, 0, SDL_ALPHA_OPAQUE);
 
 
     SDL_RenderClear(renderer);
 
-    if (isMoving) {
-      SDL_RenderCopy(renderer, playerRunTexture, &playerSourceRectRun,
-                     &playerDestRect);
-    } else {
-      SDL_RenderCopy(renderer, playerTexture, &playerSourceRect,
-                     &playerDestRect);
-    }
+    // if (isMoving) {
+    //   SDL_RenderCopy(renderer, playerRunTexture, &playerSourceRectRun,
+    //                  &playerDestRect);
+    // } else {
+    //   SDL_RenderCopy(renderer, playerTexture, &playerSourceRect,
+    //                  &playerDestRect);
+    // }
+if (isMoving) {
+    SDL_RenderCopyEx(renderer, playerRunTexture, &playerSourceRectRun,
+                     &playerDestRect, 0, NULL, flipType);
+} else {
+    SDL_RenderCopyEx(renderer, playerTexture, &playerSourceRect,
+                     &playerDestRect, 0, NULL, flipType);
+}
     // SDL_RenderCopy(renderer, playerTexture, &playerSourceRect, &playerDestRect);
 
     // Draw the tile map
